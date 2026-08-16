@@ -1,6 +1,8 @@
 // import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as env from "../../../../../../../../src/_config";
+import { resinFetch } from "../../../../../../../../src/utils/resin-fetch";
+import { withResinError } from "../../../../../../../../src/utils/with-resin-error";
 
 const api = env.api.intl.search;
 const basic_res = {
@@ -68,7 +70,7 @@ const basic_res = {
 
 // const main = async (req: VercelRequest, res: VercelResponse) => {
 const main = async (req: NextApiRequest, res: NextApiResponse) => {
-  fetch(api + req.url, {
+  return resinFetch(api + req.url, {
     method: req.method,
     headers: {
       "User-Agent": env.UA,
@@ -92,4 +94,4 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 };
 
-export default main;
+export default withResinError(main);

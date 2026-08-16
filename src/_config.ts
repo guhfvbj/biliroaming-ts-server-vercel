@@ -7,7 +7,7 @@ type _block_bangumi = {
   avid?: number[];
   bvid?: string[];
 };
-type _block_region = ["cn" | "hk" | "tw" | "th"];
+type _block_region = Array<"cn" | "hk" | "tw" | "th">;
 //=============================================================================
 
 //==============================API区(不用改)====================================
@@ -262,7 +262,13 @@ export const block_bangumi: _block_bangumi = {
 };
 //锁区，填写的是支持的地区 cn-中国大陆 hk-中国香港 tw-中国台湾 th-泰国/新加坡/东南亚地区
 //TODO 暂时未加地区检测，访问不支持地区由B站服务器提示错误。
-export const block_region: _block_region = ["hk"];
+const configuredRegion = process.env.BILI_REGION?.trim().toLowerCase();
+const blockRegion: Record<string, _block_region[number]> = {
+  hk: "hk",
+  tw: "tw",
+  sea: "th",
+};
+export const block_region: _block_region = [blockRegion[configuredRegion || "hk"] || "hk"];
 //============================================================
 
 //=====================获取非官方泰区字幕========================

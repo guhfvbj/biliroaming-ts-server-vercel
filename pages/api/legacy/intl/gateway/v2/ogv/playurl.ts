@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as env from "../../../../../../../src/_config";
+import { resinFetch } from "../../../../../../../src/utils/resin-fetch";
+import { withResinError } from "../../../../../../../src/utils/with-resin-error";
 // import * as data_parse from "./_data";
 
 const main = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -9,7 +11,7 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
   );
   if (continue_execute[0] == false) res.json(env.block(continue_execute[1]));
   else res.json(await data_parse.main(req.url as string)); */
-  fetch(env.api.intl.playurl + req.url, {
+  return resinFetch(env.api.intl.playurl + req.url, {
     method: req.method,
     headers: {
       "User-Agent": env.UA,
@@ -21,4 +23,4 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 };
 
-export default main;
+export default withResinError(main);

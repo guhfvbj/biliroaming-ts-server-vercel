@@ -18,6 +18,7 @@ import qs from "qs";
 // import { md5 } from "hash-wasm";
 import { md5 } from "js-md5";
 import * as env from "../_config";
+import { resinFetch } from "./resin-fetch";
 
 const loggerc = env.logger.child({ action: "调用组件(_bili)" });
 
@@ -236,7 +237,7 @@ export const cookies2access_key = async (cookies: {
     log.info({ status: "Failed: No cookies" });
     return;
   }
-  const auth_code = await fetch(
+  const auth_code = await resinFetch(
     // 第三方登陆法失效，现使用TV登陆法(会产生登陆信息)
     env.api.main.web.third_login + "/x/passport-tv-login/qrcode/auth_code",
     {
@@ -275,7 +276,7 @@ export const cookies2access_key = async (cookies: {
     log.info({ status: "Failed: No auth_code" });
     return;
   }
-  return await fetch(
+  return await resinFetch(
     env.api.main.web.third_login + "/x/passport-tv-login/h5/qrcode/confirm",
     {
       method: "POST",
@@ -288,7 +289,7 @@ export const cookies2access_key = async (cookies: {
     }
   ).then(
     async () =>
-      await fetch(
+      await resinFetch(
         env.api.main.web.third_login + "/x/passport-tv-login/qrcode/poll",
         {
           method: "POST",
@@ -342,7 +343,7 @@ export const access_key2info = async (access_key: string, appkey?: string) => {
   const log = loggerc.child({
     module: "通过access_key查询个人信息",
   });
-  return await fetch(
+  return await resinFetch(
     env.api.main.app.user_info +
       "/x/v2/account/myinfo?" +
       (await appsign({ access_key, appkey, ts: Date.now() })),
@@ -376,7 +377,7 @@ export const access_keyParams2info = async (params: string) => {
   const log = loggerc.child({
     module: "通过含access_key及sign的Params查询个人信息",
   });
-  return await fetch(
+  return await resinFetch(
     env.api.main.app.user_info + "/x/v2/account/myinfo" + params,
     env.fetch_config_UA
   )
@@ -412,7 +413,7 @@ export const cookies2info = async (cookies: { SESSDATA: string }) => {
     log.info({ status: "Failed" });
     return;
   }
-  return await fetch(env.api.main.web.user_info + "/x/vip/web/user/info?", {
+  return await resinFetch(env.api.main.web.user_info + "/x/vip/web/user/info?", {
     headers: { "User-Agent": env.UA, cookie: "SESSDATA=" + cookies.SESSDATA },
   })
     .then((res) => res.json())
@@ -445,7 +446,7 @@ export const getCookies = async (uri = "https://www.bilibili.com/") => {
   const log = loggerc.child({
     module: "获取Bilibili网页版Cookies(游客)",
   });
-  return await fetch(uri, env.fetch_config_UA)
+  return await resinFetch(uri, env.fetch_config_UA)
     .then((res) => {
       //代码来源
       /*本文作者： cylee'贝尔塔猫

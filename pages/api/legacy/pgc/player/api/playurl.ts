@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as env from "../../../../../../src/_config";
 import * as data_parse from "../../../../../../src/utils/player-data-handler/app";
+import { withResinError } from "../../../../../../src/utils/with-resin-error";
 
 const main = async (req: NextApiRequest, res: NextApiResponse) => {
   //res.json(req.headers)
@@ -46,4 +47,4 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     })*/
 };
 
-export default main;
+export default withResinError(main);

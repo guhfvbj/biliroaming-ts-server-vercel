@@ -1,10 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as env from "../../../../../../../../../src/_config";
+import { resinFetch } from "../../../../../../../../../src/utils/resin-fetch";
+import { withResinError } from "../../../../../../../../../src/utils/with-resin-error";
 
 const api = env.api.intl.season_info;
 
 const main = async (req: NextApiRequest, res: NextApiResponse) => {
-  fetch(api + req.url, {
+  return resinFetch(api + req.url, {
     method: req.method,
   })
     .then((response) => response.json())
@@ -37,4 +39,4 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 };
 
-export default main;
+export default withResinError(main);

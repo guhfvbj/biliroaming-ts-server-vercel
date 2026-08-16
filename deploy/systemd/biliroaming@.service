@@ -1,0 +1,38 @@
+[Unit]
+Description=BiliRoaming Resin instance (%i)
+After=network-online.target docker.service
+Wants=network-online.target
+StartLimitIntervalSec=5min
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=biliroaming
+Group=biliroaming
+WorkingDirectory=/opt/biliroaming-ts-server-vercel/current
+EnvironmentFile=/etc/biliroaming/%i.env
+Environment=HOME=/opt/biliroaming-ts-server-vercel
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=NODE_OPTIONS=--max-old-space-size=192
+ExecStart=/usr/bin/env pnpm exec next start --hostname ${BIND_HOST} --port ${PORT}
+Restart=on-failure
+RestartSec=15s
+TimeoutStopSec=30s
+CPUQuota=50%
+MemoryHigh=220M
+MemoryMax=256M
+MemorySwapMax=0
+TasksMax=100
+LimitNOFILE=8192
+OOMScoreAdjust=500
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+ReadWritePaths=/tmp /opt/biliroaming-ts-server-vercel/current/.next/cache
+
+[Install]
+WantedBy=multi-user.target
