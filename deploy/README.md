@@ -98,6 +98,18 @@ sudo systemctl reload nginx
 
 Nginx 对公网监听 `3101`、`3102`、`3103`，并分别代理到本机的 `13101`、`13102`、`13103`。不要把 Resin `2260` 暴露给公网。
 
+## Cloudflare Tunnel 客户端入口
+
+生产环境通过既有 Cloudflare Tunnel 向客户端提供受信任的 HTTPS。BBZQ 应使用以下地址，不要填写服务器 IP 或端口：
+
+| BBZQ 区域 | 地址 | 本机 origin |
+| --- | --- | --- |
+| 香港 | `https://hk.2513253.xyz` | `http://127.0.0.1:3101` |
+| 台湾 | `https://tw.2513253.xyz` | `http://127.0.0.1:3102` |
+| 东南亚/泰国 | `https://th.2513253.xyz` | `http://127.0.0.1:3103` |
+
+Tunnel 的远程 ingress 必须保留原有主机名，并将上述三个主机名分别映射到对应 origin。三个 DNS 记录使用同一 Tunnel 的 `<tunnel-id>.cfargotunnel.com` CNAME 且开启代理。Cloudflare 在边缘终止 TLS；应用和 Nginx 无需保存客户端信任的证书。
+
 ## 验收与故障切换
 
 ```bash
