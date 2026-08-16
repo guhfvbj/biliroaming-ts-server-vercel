@@ -4,10 +4,11 @@ import * as blacklist from "../_blacklist";
 import * as bili from "../_bili";
 import * as playerUtil from "../_player";
 import { IncomingHttpHeaders } from "http";
+import { resinFetch } from "../resin-fetch";
 
 const fetchDataFromBiliAndCache = async (url_data: string) => {
   // console.log("从BiliBili获取数据", "尝试中");
-  const res = (await fetch(
+  const res = (await resinFetch(
     env.api.main.app.playurl + url_data,
     env.fetch_config_UA
   ).then((res) => res.json())) as { code: number };

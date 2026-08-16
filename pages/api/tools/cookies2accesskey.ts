@@ -4,6 +4,7 @@ import { logger } from "../../../src/_config";
 import qs from "qs";
 import * as env from "../../../src/_config";
 import { cookies2access_key } from "../../../src/utils/_bili";
+import { withResinError } from "../../../src/utils/with-resin-error";
 
 // const main = async (req: VercelRequest, res: VercelResponse) => {
 const main = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -28,4 +29,4 @@ function cookieToJson(cookies: string) {
   return obj;
 }
 
-export default main;
+export default withResinError(main);

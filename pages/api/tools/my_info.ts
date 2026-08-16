@@ -7,6 +7,7 @@ import {
   access_key2info,
   access_keyParams2info,
 } from "../../../src/utils/_bili";
+import { withResinError } from "../../../src/utils/with-resin-error";
 
 // const main = async (req: VercelRequest, res: VercelResponse) => {
 const main = async (req: NextApiRequest, res: NextApiResponse) => {
@@ -23,4 +24,4 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
   });
 };
 
-export default main;
+export default withResinError(main);

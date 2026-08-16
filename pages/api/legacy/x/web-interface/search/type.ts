@@ -2,6 +2,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as env from "../../../../../../src/_config";
 import { getCookies } from "../../../../../../src/utils/_bili";
+import { resinFetch } from "../../../../../../src/utils/resin-fetch";
+import { withResinError } from "../../../../../../src/utils/with-resin-error";
 
 const api = env.api.main.web.search;
 const basic_res = {
@@ -72,7 +74,7 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
   // console.log(
   //   api + "/x/web-interface/search/type" + new URL(req.url, api).search
   // );
-  await fetch(api + req.url, {
+  await resinFetch(api + req.url, {
     method: req.method,
     headers: {
       "User-Agent": env.UA,
@@ -105,4 +107,4 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 };
 
-export default main;
+export default withResinError(main);

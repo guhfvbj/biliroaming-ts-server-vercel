@@ -3,6 +3,7 @@ import * as env from "../../_config";
 import * as blacklist from "../_blacklist";
 import * as bili from "../_bili";
 import * as playerUtil from "../_player";
+import { resinFetch } from "../resin-fetch";
 
 const checkBlackList = async (uid: number): Promise<[boolean, number]> => {
   //黑白名单验证
@@ -127,7 +128,7 @@ export const main = async (
     );
     if (rCache) return { code: 0, message: "success", result: rCache };
     else {
-      const res = (await fetch(
+      const res = (await resinFetch(
         env.api.main.web.playurl +
           url_data +
           (access_key ? "&access_key=" + access_key : ""),
@@ -141,7 +142,7 @@ export const main = async (
   } else {
     cookies = bili.getCookies();
     // console.log(env.api.main.web.playurl + url_data);
-    const res = (await fetch(env.api.main.web.playurl + url_data, {
+    const res = (await resinFetch(env.api.main.web.playurl + url_data, {
       headers: { "User-Agent": env.UA, cookie: cookies },
     }).then((res) => res.json())) as { code: number; result: object };
     // console.log(res);
