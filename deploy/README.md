@@ -1,6 +1,6 @@
 # Resin 三实例源码部署
 
-本部署使用同一份源码和一次构建，启动三个 Next.js 实例。每个实例使用独立的 Resin Platform + Account，所有 Bilibili 请求必须经过 Resin；Resin 不可用时不会直连 Bilibili。
+本部署使用同一份源码和一次构建，启动三个 Next.js 实例。每个实例使用独立的 Resin Platform + Account，所有 Bilibili 请求必须经过 Resin；Resin 不可用时不会直连 Bilibili。Next.js 只绑定回环地址，Nginx 保留 BBZQ 使用的三个公网端口。
 
 ## Resin 平台
 
@@ -75,6 +75,8 @@ BiliSEA / BiliSEA
 
 `RESIN_PROXY_TOKEN` 仅在 Resin 开启代理令牌认证时填写；未启用时保留为空。无论是否使用令牌，应用始终发送 Platform/Account 身份，且不会回退为直连。
 
+三个 Next.js 后端端口为 `127.0.0.1:13101`、`:13102`、`:13103`。公网端口 `3101`、`3102`、`3103` 由 Nginx 分别代理到对应后端，BBZQ 应继续使用这三个公网地址。
+
 ## systemd
 
 ```bash
@@ -84,16 +86,26 @@ sudo systemctl enable --now biliroaming@bilihk biliroaming@bilitw biliroaming@bi
 sudo systemctl status biliroaming@bilihk biliroaming@bilitw biliroaming@bilisea --no-pager
 ```
 
-三个实例分别监听 `3101`、`3102`、`3103`。不要把 Resin `2260` 暴露给公网。
+安装 Nginx 配置，并在切换前先校验语法：
+
+```bash
+sudo install -d -m 0755 /etc/nginx/snippets
+sudo install -m 0644 deploy/nginx/biliroaming-proxy.conf /etc/nginx/snippets/biliroaming-proxy.conf
+sudo install -m 0644 deploy/nginx/biliroaming.conf /etc/nginx/conf.d/biliroaming.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Nginx 对公网监听 `3101`、`3102`、`3103`，并分别代理到本机的 `13101`、`13102`、`13103`。不要把 Resin `2260` 暴露给公网。
 
 ## 验收与故障切换
 
 ```bash
-curl -fsS http://127.0.0.1:3101/api/server_info
-curl -fsS http://127.0.0.1:3102/api/server_info
-curl -fsS http://127.0.0.1:3103/api/server_info
+curl -fsS http://127.0.0.1:3101/api/bbzq/compat
+curl -fsS http://127.0.0.1:3102/api/bbzq/compat
+curl -fsS http://127.0.0.1:3103/api/bbzq/compat
 ```
 
-在 Resin 管理面板检查三个平台的 routable node 数量、健康状态、延迟和 Account 租约。连续请求同一实例时，租约应保持稳定；将当前节点置为不可用后，后续请求应由 Resin 选择同平台健康节点。
+兼容接口的 `region` 应依次为 `hk`、`tw`、`th`，并返回对应能力集合和 `Cache-Control: no-store`。在 Resin 管理面板检查三个平台的 routable node 数量、健康状态、延迟和 Account 租约。连续请求同一实例时，租约应保持稳定；将当前节点置为不可用后，后续请求应由 Resin 选择同平台健康节点。
 
 停止 Resin 或阻断其监听端口后，Bilibili 请求必须失败；确认日志中没有应用直连 Bilibili 的连接。恢复 Resin 后再验证三个实例恢复。

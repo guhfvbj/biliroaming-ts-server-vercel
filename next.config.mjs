@@ -19,12 +19,23 @@ const cache_control = (/** @type {number} */ time) => [
   },
 ];
 
+const no_store_headers = [
+  {
+    key: "Cache-Control",
+    value: "no-store",
+  },
+];
+
 /**
  * @type {import('next').NextConfig}
  */
 const nextConfig = {
   async headers() {
     return [
+      {
+        source: "/api/bbzq/compat",
+        headers: no_store_headers,
+      },
       {
         source: "/(.*)",
         headers: cache_control(86400),
@@ -76,6 +87,10 @@ const nextConfig = {
       {
         source: "/bilibili.pgc.gateway.player.v1.PlayURL/:path(.*)",
         destination: "/api/legacy/grpc/pgc-playurl/:path*",
+      },
+      {
+        source: "/bilibili.pgc.gateway.player.v2.PlayURL/:path(.*)",
+        destination: "/api/legacy/grpc/pgc-playurl-v2/:path*",
       },
       {
         source: "/bilibili.community.service.dm.v1.DM/:path(.*)",

@@ -41,8 +41,14 @@ export const middleware = async (
   });
 
   //请求头验证
-  if (!headers["x-from-biliroaming"] && env.web_on === 0) return [false, 1];
-  if (env.ver_min !== 0 && env.ver_min > Number(headers["build"]))
+  const fromBiliRoaming = Boolean(headers["x-from-biliroaming"]);
+  const fromBbzq = Boolean(headers["platform-from-bbzq"]);
+  if (!fromBiliRoaming && !fromBbzq && env.web_on === 0) return [false, 1];
+  if (
+    fromBiliRoaming &&
+    env.ver_min !== 0 &&
+    env.ver_min > Number(headers["build"])
+  )
     return [false, 2];
   //信息获取
   const url = new URL(url_data, env.api.main.app.playurl);
@@ -57,7 +63,9 @@ export const middleware = async (
     return [false, 8, "avid" + data.avid];
   if (data.bvid && env.block_bangumi.bvid.includes(data.bvid as string))
     return [false, 8, "bvid" + data.bvid];
-  //免登陆
+  if (env.need_login === 0 && !data.access_key) return [true, 0];
+
+  //登录用户才查询凭据、记录日志和执行黑白名单校验。
   const info = await bili.access_keyParams2info(url.search);
   if (info.uid === 0) {
     //查询信息失败
@@ -102,7 +110,11 @@ export const main = async (
   //信息获取
   const url = new URL(url_data, env.api.main.app.playurl);
   const data = qs.parse(url.search.slice(1));
-  const info = info_cahce || (await bili.access_keyParams2info(url.search));
+  const info =
+    info_cahce ||
+    (!env.need_login && !data.access_key
+      ? { uid: 0, vip_type: 0 as const }
+      : await bili.access_keyParams2info(url.search));
   if (env.need_login && info.uid === 0) return env.block(6);
   const rCache = await playerUtil.readCache(
     Number(data.cid),

@@ -74,8 +74,10 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
       log.debug({ context: response });
       if (response.code === 0) {
         let m_res = response;
-        if (m_res.data.items) m_res["data"]["items"].splice(0, 0, basic_res);
-        else m_res["data"]["items"] = [basic_res];
+        if (env.fs_enabled === 1) {
+          if (m_res.data.items) m_res["data"]["items"].splice(0, 0, basic_res);
+          else m_res["data"]["items"] = [basic_res];
+        }
         res.json(m_res);
       } else res.json(response);
     });

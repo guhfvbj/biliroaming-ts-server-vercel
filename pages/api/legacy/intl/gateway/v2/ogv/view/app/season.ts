@@ -28,13 +28,13 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
         };
       }) => {
         if (response.code === 0 && env.th_subtitle_api) {
-          let m_res = response;
-          if (m_res.result?.modules[0]?.episodes) {
-            const episodes = m_res.result?.modules[0]?.episodes;
+          if (response.result?.modules[0]?.episodes) {
+            const episodes = response.result?.modules[0]?.episodes;
             for (const ep of episodes) {
             }
           }
-        } else res.json(response);
+        }
+        res.json(response);
       }
     );
 };

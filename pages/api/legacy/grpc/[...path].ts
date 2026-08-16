@@ -13,6 +13,8 @@ const targets: Record<string, string> = {
     "https://grpc.biliapi.net/api/grpc/bilibili.app.playurl.v1.PlayURL",
   "pgc-playurl":
     "https://app.bilibili.com/api/grpc/bilibili.pgc.gateway.player.v1.PlayURL",
+  "pgc-playurl-v2":
+    "https://app.bilibili.com/api/grpc/bilibili.pgc.gateway.player.v2.PlayURL",
   dm: "https://app.bilibili.com/api/grpc/bilibili.community.service.dm.v1.DM",
 };
 
@@ -84,7 +86,7 @@ export default async function handler(
         res.setHeader(key, value);
       }
     });
-    res.status(response.status).send(Buffer.from(await response.arrayBuffer()));
+    res.status(response.status).end(Buffer.from(await response.arrayBuffer()));
   } catch (error) {
     env.logger.error({ err: error, target }, "Resin gRPC upstream request failed");
     res.status(503).json({ code: -503, message: "Resin upstream unavailable" });

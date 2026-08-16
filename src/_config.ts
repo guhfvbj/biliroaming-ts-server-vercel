@@ -239,8 +239,12 @@ export const public_blacklist: string = "https://black.qimo.ink/api/users/";
 //============================================================
 
 //=====================限制API调用=============================
+//BBZQ兼容接口开关
+export const bbzq_enabled: io = 1;
+//替换搜索公告开关
+export const fs_enabled: io = 0;
 //要求登录 1-开 0-关
-export const need_login: io = 1;
+export const need_login: io = 0;
 //允许WEB版使用(B站官网可直接请求,无需开启此选项) 1-开 0-关
 export const web_on: io = 0;
 //允许Referer为 https://www.bilibili.com 的请求而无需打开web_on (解决BBDown问题) 1-开 0-关
@@ -269,6 +273,18 @@ const blockRegion: Record<string, _block_region[number]> = {
   sea: "th",
 };
 export const block_region: _block_region = [blockRegion[configuredRegion || "hk"] || "hk"];
+export const bbzq_region = (() => {
+  switch (configuredRegion) {
+    case "hk":
+      return "hk" as const;
+    case "tw":
+      return "tw" as const;
+    case "sea":
+      return "th" as const;
+    default:
+      return null;
+  }
+})();
 //============================================================
 
 //=====================获取非官方泰区字幕========================
