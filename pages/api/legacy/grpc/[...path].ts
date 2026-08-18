@@ -15,7 +15,11 @@ const targets: Record<string, string> = {
     "https://app.bilibili.com/api/grpc/bilibili.pgc.gateway.player.v1.PlayURL",
   "pgc-playurl-v2":
     "https://app.bilibili.com/api/grpc/bilibili.pgc.gateway.player.v2.PlayURL",
-  dm: "https://app.bilibili.com/api/grpc/bilibili.community.service.dm.v1.DM",
+  dm: "https://grpc.biliapi.net/bilibili.community.service.dm.v1.DM",
+  reply:
+    "https://grpc.biliapi.net/bilibili.main.community.reply.v1.Reply",
+  "reply-v2":
+    "https://grpc.biliapi.net/bilibili.main.community.reply.v2.Reply",
 };
 
 const readBody = async (req: NextApiRequest) => {
@@ -73,6 +77,12 @@ export default async function handler(
   const body = ["GET", "HEAD"].includes(req.method || "GET")
     ? undefined
     : await readBody(req);
+  const routeName = pathParts.length > 0 ? pathParts.join("/") : "";
+  const hasAccessKey = Boolean(
+    req.headers["access_key"] ||
+      req.headers["x-access-key"] ||
+      req.headers.authorization
+  );
 
   try {
     const response = await resinFetch(target, {
@@ -86,9 +96,31 @@ export default async function handler(
         res.setHeader(key, value);
       }
     });
-    res.status(response.status).end(Buffer.from(await response.arrayBuffer()));
+    const responseBytes = Buffer.from(await response.arrayBuffer());
+    env.logger.info(
+      {
+        action: "BBZQ gRPC透传",
+        route: pathParts[0] || "unknown",
+        method: routeName,
+        request_bytes: body?.byteLength || 0,
+        response_status: response.status,
+        response_bytes: responseBytes.byteLength,
+        has_access_key: hasAccessKey,
+      },
+      "BBZQ gRPC request",
+    );
+    res.status(response.status).end(responseBytes);
   } catch (error) {
-    env.logger.error({ err: error, target }, "Resin gRPC upstream request failed");
+    env.logger.error(
+      {
+        err: error,
+        route: pathParts[0] || "unknown",
+        method: routeName,
+        request_bytes: body?.byteLength || 0,
+        has_access_key: hasAccessKey,
+      },
+      "Resin gRPC upstream request failed",
+    );
     res.status(503).json({ code: -503, message: "Resin upstream unavailable" });
   }
 }

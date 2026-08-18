@@ -96,6 +96,14 @@ const nextConfig = {
         source: "/bilibili.community.service.dm.v1.DM/:path(.*)",
         destination: "/api/legacy/grpc/dm/:path*",
       },
+      {
+        source: "/bilibili.main.community.reply.v1.Reply/:path(.*)",
+        destination: "/api/legacy/grpc/reply/:path*",
+      },
+      {
+        source: "/bilibili.main.community.reply.v2.Reply/:path(.*)",
+        destination: "/api/legacy/grpc/reply-v2/:path*",
+      },
     ];
   },
 };
