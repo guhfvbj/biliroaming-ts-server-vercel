@@ -15,7 +15,7 @@ type _block_region = Array<"cn" | "hk" | "tw" | "th">;
 //export const api_search: string = "https://app.bilibili.com";
 //playurl等主要功能 api
 //export const api_playurl: string = "https://api.bilibili.com";
-//main 为 主站API(大陆+港澳台) ;intl 为 海外版API(东南亚)
+//main 为 主站API(大陆+港澳台) ;intl 为 B站国际版 API
 export const api = {
   main: {
     web: {
@@ -264,13 +264,13 @@ export const block_bangumi: _block_bangumi = {
   avid: [], //数字
   bvid: [], //字符，eg. ["BV1Wz4y1t7g4"]
 };
-//锁区，填写的是支持的地区 cn-中国大陆 hk-中国香港 tw-中国台湾 th-泰国/新加坡/东南亚地区
+//锁区，填写的是支持的地区 cn-中国大陆 hk-中国香港 tw-中国台湾 th-B站国际版内部地区值
 //TODO 暂时未加地区检测，访问不支持地区由B站服务器提示错误。
 const configuredRegion = process.env.BILI_REGION?.trim().toLowerCase();
 const blockRegion: Record<string, _block_region[number]> = {
   hk: "hk",
   tw: "tw",
-  sea: "th",
+  intl: "th",
 };
 export const block_region: _block_region = [blockRegion[configuredRegion || "hk"] || "hk"];
 export const bbzq_region = (() => {
@@ -279,8 +279,8 @@ export const bbzq_region = (() => {
       return "hk" as const;
     case "tw":
       return "tw" as const;
-    case "sea":
-      return "th" as const;
+    case "intl":
+      return "intl" as const;
     default:
       return null;
   }

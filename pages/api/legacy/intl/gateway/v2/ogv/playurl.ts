@@ -19,7 +19,12 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     if (value) forwardedHeaders.set(name, value);
   }
 
-  const response = await resinFetch(env.api.intl.playurl + req.url, {
+  const requestUrl = new URL(req.url ?? "/api/legacy/intl/gateway/v2/ogv/playurl", "http://bbzq.invalid");
+  const originalQuery = Object.fromEntries(requestUrl.searchParams.entries());
+  requestUrl.searchParams.delete("area");
+  const upstreamPath = requestUrl.pathname.replace(/^\/api\/legacy\/intl(?=\/|$)/, "/intl");
+  const forwardedPath = `${upstreamPath}${requestUrl.search}`;
+  const response = await resinFetch(env.api.intl.playurl + forwardedPath, {
     method: req.method,
     headers: forwardedHeaders,
   });
@@ -41,6 +46,8 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     action: "国际影视解析",
     method: req.method,
     route: pathname,
+    original_query: originalQuery,
+    forwarded_query: Object.fromEntries(requestUrl.searchParams.entries()),
     upstream_status: response.status,
     upstream_content_type: contentType || "unknown",
     upstream_bytes: Buffer.byteLength(body, "utf8"),

@@ -15,7 +15,7 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
       protocol: "bbzq-bangumi/1",
       region,
       capabilities:
-        region === "th"
+        region === "intl"
           ? ["search", "season", "playurl", "subtitle", "grpc-playurl-v1", "grpc-playurl-v2"]
           : ["search", "season", "playurl", "grpc-playurl-v1", "grpc-playurl-v2"],
     },

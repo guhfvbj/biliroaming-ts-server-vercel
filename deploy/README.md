@@ -10,9 +10,9 @@
 | --- | --- | --- |
 | `BiliHK` | `hk`, `mo` | 港澳节点 |
 | `BiliTW` | `tw` | 台湾节点 |
-| `BiliSEA` | `sg`, `th` | 新加坡和泰国；低延迟节点优先 |
+| `BiliIntl` | `sg`, `th`, `jp`, `us` | 国际节点；由 Resin 健康检查和测速机制选择可用节点，排除港澳台 |
 
-Resin 当前平台模型没有严格的地区优先级字段，因此 `BiliSEA` 使用低延迟策略：健康的新加坡节点通常优先，新加坡不可用或质量较差时自动使用泰国节点。不要关闭 Resin 的 passive circuit breaker。
+`BiliIntl` 纳入新加坡、泰国、日本和美国的全部匹配节点，不设置额外延迟门槛；实际播放验证通过后由 Resin 的健康检查、测速和 passive circuit breaker 负责调度和剔除故障节点。香港、澳门、台湾节点不允许进入该平台。
 
 管理 API 使用 Resin 管理 Token，示例请求只展示结构，Token 必须从运行时环境注入：
 
@@ -26,9 +26,9 @@ curl -fsS -H "Authorization: Bearer ${RESIN_ADMIN_TOKEN}" \
 
 ```json
 {
-  "name": "BiliSEA",
+  "name": "BiliIntl",
   "sticky_ttl": "24h",
-  "region_filters": ["sg", "th"],
+  "region_filters": ["sg", "th", "jp", "us"],
   "allocation_policy": "PREFER_LOW_LATENCY",
   "reverse_proxy_miss_action": "REJECT",
   "passive_circuit_breaker_disabled": false
@@ -62,7 +62,7 @@ sudo -u biliroaming env NODE_OPTIONS=--max-old-space-size=512 pnpm build
 sudo install -d -m 0750 -o root -g biliroaming /etc/biliroaming
 sudo install -m 0600 -o root -g biliroaming deploy/env/bilihk.env.example /etc/biliroaming/bilihk.env
 sudo install -m 0600 -o root -g biliroaming deploy/env/bilitw.env.example /etc/biliroaming/bilitw.env
-sudo install -m 0600 -o root -g biliroaming deploy/env/bilisea.env.example /etc/biliroaming/bilisea.env
+sudo install -m 0600 -o root -g biliroaming deploy/env/biliintl.env.example /etc/biliroaming/biliintl.env
 ```
 
 `RESIN_PROXY_URL` 只填写 Resin 地址，不要把 Token 拼进 URL。三个实例的 `RESIN_PLATFORM` 和 `RESIN_ACCOUNT` 必须分别为：
@@ -70,7 +70,7 @@ sudo install -m 0600 -o root -g biliroaming deploy/env/bilisea.env.example /etc/
 ```text
 BiliHK / BiliHK
 BiliTW / BiliTW
-BiliSEA / BiliSEA
+BiliIntl / BiliIntl
 ```
 
 `RESIN_PROXY_TOKEN` 仅在 Resin 开启代理令牌认证时填写；未启用时保留为空。无论是否使用令牌，应用始终发送 Platform/Account 身份，且不会回退为直连。
@@ -82,8 +82,8 @@ BiliSEA / BiliSEA
 ```bash
 sudo install -m 0644 deploy/systemd/biliroaming@.service /etc/systemd/system/biliroaming@.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now biliroaming@bilihk biliroaming@bilitw biliroaming@bilisea
-sudo systemctl status biliroaming@bilihk biliroaming@bilitw biliroaming@bilisea --no-pager
+sudo systemctl enable --now biliroaming@bilihk biliroaming@bilitw biliroaming@biliintl
+sudo systemctl status biliroaming@bilihk biliroaming@bilitw biliroaming@biliintl --no-pager
 ```
 
 安装 Nginx 配置，并在切换前先校验语法：
@@ -106,7 +106,7 @@ Nginx 对公网监听 `3101`、`3102`、`3103`，并分别代理到本机的 `13
 | --- | --- | --- |
 | 香港 | `https://hk.2513253.xyz` | `http://127.0.0.1:3101` |
 | 台湾 | `https://tw.2513253.xyz` | `http://127.0.0.1:3102` |
-| 东南亚/泰国 | `https://th.2513253.xyz` | `http://127.0.0.1:3103` |
+| 国际 | `https://th.2513253.xyz` | `http://127.0.0.1:3103` |
 
 Tunnel 的远程 ingress 必须保留原有主机名，并将上述三个主机名分别映射到对应 origin。三个 DNS 记录使用同一 Tunnel 的 `<tunnel-id>.cfargotunnel.com` CNAME 且开启代理。Cloudflare 在边缘终止 TLS；应用和 Nginx 无需保存客户端信任的证书。
 
@@ -118,6 +118,6 @@ curl -fsS http://127.0.0.1:3102/api/bbzq/compat
 curl -fsS http://127.0.0.1:3103/api/bbzq/compat
 ```
 
-兼容接口的 `region` 应依次为 `hk`、`tw`、`th`，并返回对应能力集合和 `Cache-Control: no-store`。在 Resin 管理面板检查三个平台的 routable node 数量、健康状态、延迟和 Account 租约。连续请求同一实例时，租约应保持稳定；将当前节点置为不可用后，后续请求应由 Resin 选择同平台健康节点。
+兼容接口的 `region` 应依次为 `hk`、`tw`、`intl`，并返回对应能力集合和 `Cache-Control: no-store`。在 Resin 管理面板检查三个平台的 routable node 数量、健康状态、延迟和 Account 租约。连续请求同一实例时，租约应保持稳定；将当前节点置为不可用后，后续请求应由 Resin 选择同平台健康节点。
 
 停止 Resin 或阻断其监听端口后，Bilibili 请求必须失败；确认日志中没有应用直连 Bilibili 的连接。恢复 Resin 后再验证三个实例恢复。
