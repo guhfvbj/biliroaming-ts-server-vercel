@@ -75,7 +75,9 @@ BiliIntl / BiliIntl
 
 `RESIN_PROXY_TOKEN` 仅在 Resin 开启代理令牌认证时填写；未启用时保留为空。无论是否使用令牌，应用始终发送 Platform/Account 身份，且不会回退为直连。
 
-三个 Next.js 后端端口为 `127.0.0.1:13101`、`:13102`、`:13103`。公网端口 `3101`、`3102`、`3103` 由 Nginx 分别代理到对应后端，BBZQ 应继续使用这三个公网地址。
+三个 Next.js 后端端口为 `127.0.0.1:13101`、`:13102`、`:13103`。Cloudflare Tunnel 使用明文 origin 端口 `3101`、`3102`、`3103`；直接以服务器 IP+HTTPS 连接时使用 `3441`、`3442`、`3443`。
+
+IP 直连证书位于 `/etc/nginx/ssl/bbzq-origin-ip.crt` 和 `/etc/nginx/ssl/bbzq-origin-ip.key`，证书 SAN 必须包含服务器 IP。客户端会仅对该 IP 入口信任这张证书，不会关闭通用 TLS 校验。
 
 ## systemd
 
@@ -96,7 +98,15 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-Nginx 对公网监听 `3101`、`3102`、`3103`，并分别代理到本机的 `13101`、`13102`、`13103`。不要把 Resin `2260` 暴露给公网。
+Nginx 对公网监听 `3101`、`3102`、`3103`（HTTP，供 Tunnel 使用）以及 `3441`、`3442`、`3443`（HTTPS，供 IP 直连使用），并分别代理到本机的 `13101`、`13102`、`13103`。不要把 Resin `2260` 暴露给公网。
+
+如使用 UFW，放行直连端口：
+
+```bash
+sudo ufw allow 3441/tcp comment 'BBZQ HK HTTPS direct'
+sudo ufw allow 3442/tcp comment 'BBZQ TW HTTPS direct'
+sudo ufw allow 3443/tcp comment 'BBZQ INTL HTTPS direct'
+```
 
 ## Cloudflare Tunnel 客户端入口
 
@@ -107,6 +117,8 @@ Nginx 对公网监听 `3101`、`3102`、`3103`，并分别代理到本机的 `13
 | 香港 | `https://hk.2513253.xyz` | `http://127.0.0.1:3101` |
 | 台湾 | `https://tw.2513253.xyz` | `http://127.0.0.1:3102` |
 | 国际 | `https://th.2513253.xyz` | `http://127.0.0.1:3103` |
+
+IP 直连地址为 `https://47.98.174.251:3441`（香港）、`:3442`（台湾）、`:3443`（国际）。
 
 Tunnel 的远程 ingress 必须保留原有主机名，并将上述三个主机名分别映射到对应 origin。三个 DNS 记录使用同一 Tunnel 的 `<tunnel-id>.cfargotunnel.com` CNAME 且开启代理。Cloudflare 在边缘终止 TLS；应用和 Nginx 无需保存客户端信任的证书。
 
