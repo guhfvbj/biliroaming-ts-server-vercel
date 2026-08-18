@@ -35,6 +35,20 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     trimmed.toLowerCase().startsWith("<!doctype html") ||
     trimmed.toLowerCase().startsWith("<html");
   const isJson = contentType.includes("json") || trimmed.startsWith("{") || trimmed.startsWith("[");
+  const upstreamJson = isJson ? parseJsonObject(body) : null;
+  const upstreamCode = typeof upstreamJson?.code === "number" ? upstreamJson.code : null;
+  const upstreamMessage = typeof upstreamJson?.message === "string" ? upstreamJson.message : null;
+  const errorKind = upstreamCode === 0
+    ? "success"
+    : upstreamCode === -404
+      ? "object_not_found"
+      : upstreamCode === -10403 || upstreamMessage?.includes("地区")
+        ? "area_limit"
+        : upstreamCode === -400
+          ? "invalid_request"
+          : upstreamCode == null
+            ? "non_json"
+            : "upstream_error";
   const pathname = (() => {
     try {
       return new URL(req.url ?? "/", "http://bbzq.invalid").pathname;
@@ -46,13 +60,16 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     action: "国际影视解析",
     method: req.method,
     route: pathname,
-    original_query: originalQuery,
-    forwarded_query: Object.fromEntries(requestUrl.searchParams.entries()),
+    original_query: summarizeQuery(originalQuery),
+    forwarded_query: summarizeQuery(Object.fromEntries(requestUrl.searchParams.entries())),
     upstream_status: response.status,
     upstream_content_type: contentType || "unknown",
     upstream_bytes: Buffer.byteLength(body, "utf8"),
     upstream_json: isJson,
     upstream_html: isHtml,
+    upstream_code: upstreamCode,
+    upstream_message: upstreamMessage,
+    upstream_error_kind: errorKind,
   });
 
   if (!isJson) {
@@ -67,6 +84,37 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
   if (contentType) res.setHeader("Content-Type", contentType);
   res.send(body);
 };
+
+const parseJsonObject = (body: string): Record<string, unknown> | null => {
+  try {
+    const value: unknown = JSON.parse(body);
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+const summarizeQuery = (query: Record<string, string>) => ({
+  ep_id: query.ep_id || undefined,
+  cid: query.cid || undefined,
+  season_id: query.season_id || undefined,
+  area: query.area || undefined,
+  qn: query.qn || undefined,
+  fnval: query.fnval || undefined,
+  fnver: query.fnver || undefined,
+  fourk: query.fourk || undefined,
+  force_host: query.force_host || undefined,
+  appkey: query.appkey || undefined,
+  build: query.build || undefined,
+  mobi_app: query.mobi_app || undefined,
+  platform: query.platform || undefined,
+  s_locale: query.s_locale || undefined,
+  has_access_key: Boolean(query.access_key),
+  has_sign: Boolean(query.sign),
+  has_ts: Boolean(query.ts),
+});
 
 const FORWARDED_HEADERS = [
   "build",
