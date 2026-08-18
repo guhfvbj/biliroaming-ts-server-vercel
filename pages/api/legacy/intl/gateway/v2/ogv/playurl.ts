@@ -65,6 +65,7 @@ const FORWARDED_HEADERS = [
   "build",
   "accept-encoding",
   "platform-from-bbzq",
+  "x-from-bbzq",
   "platform-from-biliroaming",
   "x-from-biliroaming",
   "accept",
