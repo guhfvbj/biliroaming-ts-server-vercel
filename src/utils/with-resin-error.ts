@@ -7,7 +7,7 @@ export const withResinError = (handler: NextApiHandler): NextApiHandler =>
       await handler(req, res);
     } catch (error) {
       logger.error(
-        { err: error, method: req.method, url: req.url },
+        { err: error, method: req.method, url: loggerSanitize(req.url) },
         "Resin upstream request failed"
       );
       if (!res.headersSent) {
@@ -18,3 +18,11 @@ export const withResinError = (handler: NextApiHandler): NextApiHandler =>
       }
     }
   };
+
+const loggerSanitize = (url: string | undefined): string | undefined => {
+  if (!url) return url;
+  return url.replace(
+    /([?&](?:access_key|sign|ts|token|authorization)=)[^&\s]*/gi,
+    "$1<redacted>"
+  );
+};

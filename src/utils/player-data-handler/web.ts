@@ -39,7 +39,7 @@ export const middleware = async (
   const log = env.logger.child({
     action: "获取playurl(网页端)",
     method: method || "unknown",
-    url: url_data,
+    url: env.sanitizeUrl(url_data),
   });
 
   //请求头验证
