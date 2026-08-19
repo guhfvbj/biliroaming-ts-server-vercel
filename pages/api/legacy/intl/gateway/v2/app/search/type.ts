@@ -4,7 +4,8 @@ import * as env from "../../../../../../../../src/_config";
 import { resinFetch } from "../../../../../../../../src/utils/resin-fetch";
 import { withResinError } from "../../../../../../../../src/utils/with-resin-error";
 
-const api = env.api.intl.search;
+const intlApi = env.api.intl.search;
+const mainApi = env.api.main.app.search;
 const basic_res = {
   area: "漫游",
   badge: "公告",
@@ -70,7 +71,14 @@ const basic_res = {
 
 // const main = async (req: VercelRequest, res: VercelResponse) => {
 const main = async (req: NextApiRequest, res: NextApiResponse) => {
-  return resinFetch(api + req.url, {
+  const query = new URL(req.url || "/", "http://bbzq.invalid").searchParams;
+  // BiliRoaming uses the main APP search for PGC/movie categories because
+  // the international search endpoint does not return the global OGV catalog
+  // for these synthetic category types.
+  const upstream = query.get("type") === "7" || query.get("type") === "8"
+    ? `${mainApi}/x/v2/search/type${new URL(req.url || "/", "http://bbzq.invalid").search}`
+    : intlApi + req.url;
+  return resinFetch(upstream, {
     method: req.method,
     headers: {
       "User-Agent": env.UA,
@@ -80,7 +88,7 @@ const main = async (req: NextApiRequest, res: NextApiResponse) => {
     .then((response: { data: { items: Array<object> }; code: number }) => {
       if (response.code === 0) {
         const log = env.logger.child({
-          action: "搜索(国际版)",
+          action: upstream.startsWith(mainApi) ? "搜索(国际影视-主站上游)" : "搜索(国际版)",
           method: req.method,
           url: req.url,
         });
