@@ -17,7 +17,7 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
       capabilities:
         region === "intl"
           ? ["search", "season", "playurl", "subtitle", "comments", "danmaku", "grpc-playurl-v1", "grpc-playurl-v2"]
-          : ["search", "season", "playurl", "comments", "danmaku", "grpc-playurl-v1", "grpc-playurl-v2"],
+          : ["search", "season", "playurl", "comments", "danmaku", "grpc-dm-view", "grpc-playurl-v1", "grpc-playurl-v2"],
     },
   });
 }

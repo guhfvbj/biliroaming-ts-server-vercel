@@ -6,12 +6,27 @@ import * as playerUtil from "../_player";
 import { IncomingHttpHeaders } from "http";
 import { resinFetch } from "../resin-fetch";
 
+const upstreamLog = env.logger.child({ action: "Bilibili playurl upstream" });
+
 const fetchDataFromBiliAndCache = async (url_data: string) => {
   // console.log("从BiliBili获取数据", "尝试中");
   const res = (await resinFetch(
     env.api.main.app.playurl + url_data,
     env.fetch_config_UA
-  ).then((res) => res.json())) as { code: number };
+  ).then((res) => res.json())) as {
+    code: number;
+    message?: string;
+    dash?: { video?: unknown[] };
+    durl?: unknown[];
+    result?: { dash?: { video?: unknown[] }; durl?: unknown[] };
+  };
+  upstreamLog.info({
+    region: process.env.BILI_REGION || "unknown",
+    code: res.code,
+    message: res.message || "",
+    dash_video_count: res.dash?.video?.length || res.result?.dash?.video?.length || 0,
+    durl_count: res.durl?.length || res.result?.durl?.length || 0,
+  });
   if (res.code === 0) await playerUtil.addNewCache(url_data, res);
   // else console.log("从BiliBili获取数据错误", res);
   return env.try_unblock_CDN_speed_enabled

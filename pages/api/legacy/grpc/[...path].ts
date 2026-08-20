@@ -65,7 +65,8 @@ export default async function handler(
     : typeof req.query.path === "string"
     ? [req.query.path]
     : [];
-  const route = targets[pathParts.shift() || ""];
+  const routeKey = pathParts.shift() || "";
+  const route = targets[routeKey];
   if (!route) {
     res.status(404).json({ code: -404, message: "Unknown gRPC route" });
     return;
@@ -100,7 +101,7 @@ export default async function handler(
     env.logger.info(
       {
         action: "BBZQ gRPC透传",
-        route: pathParts[0] || "unknown",
+        route: routeKey,
         method: routeName,
         request_bytes: body?.byteLength || 0,
         response_status: response.status,
@@ -109,12 +110,21 @@ export default async function handler(
       },
       "BBZQ gRPC request",
     );
+    if (
+      routeKey === "dm" &&
+      routeName === "DmView" &&
+      response.ok &&
+      responseBytes.byteLength === 0
+    ) {
+      res.status(502).json({ code: -502, message: "Empty DmView response" });
+      return;
+    }
     res.status(response.status).end(responseBytes);
   } catch (error) {
     env.logger.error(
       {
         err: error,
-        route: pathParts[0] || "unknown",
+        route: routeKey,
         method: routeName,
         request_bytes: body?.byteLength || 0,
         has_access_key: hasAccessKey,

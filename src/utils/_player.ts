@@ -194,7 +194,12 @@ export const delExpCache = async (
   const log = loggerc.child({
     module: "删除缓存",
   });
-  if (env.db_local_enabled) db.clear();
+  if (env.db_local_enabled) {
+    const normalizedCid = Number(cid) || 0;
+    const normalizedEpId = Number(ep_id) || 0;
+    db.del(`c-${normalizedCid}-${normalizedEpId}`);
+    db.del(`c-vip-${normalizedCid}-${normalizedEpId}`);
+  }
   else if (env.db_bitio_enabled)
     await env.db_bitio_pool.query("DELETE FROM cache WHERE exp <= $1", [
       Math.round(Number(new Date()) / 1000),
