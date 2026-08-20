@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as env from "../../../../src/_config";
 import { resinFetch } from "../../../../src/utils/resin-fetch";
+import { resinGrpcRequest } from "../../../../src/utils/resin-grpc";
 
 export const config = {
   api: {
@@ -40,7 +41,7 @@ const readBody = async (req: NextApiRequest) => {
 };
 
 const requestHeaders = (req: NextApiRequest) => {
-  const headers = new Headers();
+  const headers: Record<string, string> = {};
   for (const [name, value] of Object.entries(req.headers)) {
     if (
       !value ||
@@ -50,9 +51,9 @@ const requestHeaders = (req: NextApiRequest) => {
     ) {
       continue;
     }
-    headers.set(name, Array.isArray(value) ? value.join(", ") : value);
+    headers[name.toLowerCase()] = Array.isArray(value) ? value.join(", ") : value;
   }
-  headers.set("user-agent", headers.get("user-agent") || env.UA);
+  headers["user-agent"] = headers["user-agent"] || env.UA;
   return headers;
 };
 
@@ -86,6 +87,38 @@ export default async function handler(
   );
 
   try {
+    if (routeKey === "dm") {
+      const response = await resinGrpcRequest(
+        target,
+        req.method || "POST",
+        requestHeaders(req),
+        body,
+      );
+      for (const [key, value] of Object.entries(response.headers)) {
+        if (!key.startsWith(":") && value !== undefined) {
+          res.setHeader(key, Array.isArray(value) ? value.map(String) : String(value));
+        }
+      }
+      env.logger.info(
+        {
+          action: "BBZQ gRPC透传",
+          route: routeKey,
+          method: routeName,
+          request_bytes: body?.byteLength || 0,
+          response_status: response.status,
+          response_bytes: response.body.byteLength,
+          has_access_key: hasAccessKey,
+        },
+        "BBZQ gRPC request",
+      );
+      if (response.status < 200 || response.status >= 300 || response.body.byteLength === 0) {
+        res.status(502).json({ code: -502, message: "Empty DmView response" });
+        return;
+      }
+      res.status(response.status).end(response.body);
+      return;
+    }
+
     const response = await resinFetch(target, {
       method: req.method,
       headers: requestHeaders(req),
