@@ -57,7 +57,25 @@ const basic_res = {
 
 // const main = async (req: VercelRequest, res: VercelResponse) => {
 const main = async (req: NextApiRequest, res: NextApiResponse) => {
-  return resinFetch(api + req.url, {
+  const query = new URL(req.url || "/", "http://bbzq.invalid").searchParams;
+  const type = query.get("type");
+
+  // Convert BBZQ custom type=7 (HK/TW bangumi) to Bilibili's standard type=1 (bangumi/PGC)
+  const cleanUrl = new URL(req.url || "/", "http://bbzq.invalid");
+  if (type === "7") {
+    cleanUrl.searchParams.set("type", "1");  // Use Bilibili's bangumi/PGC search type
+    // Add area parameter for HK/TW region
+    if (env.bbzq_region) {
+      cleanUrl.searchParams.set("area", env.bbzq_region);
+    }
+    // Add build parameter if not present (required by main API)
+    if (!cleanUrl.searchParams.has("build")) {
+      cleanUrl.searchParams.set("build", "6400000");
+    }
+  }
+
+  const upstream = `${api}${cleanUrl.pathname}${cleanUrl.search}`;
+  return resinFetch(upstream, {
     method: req.method,
     headers: {
       "User-Agent": env.UA,

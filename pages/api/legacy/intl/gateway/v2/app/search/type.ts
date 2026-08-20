@@ -72,12 +72,39 @@ const basic_res = {
 // const main = async (req: VercelRequest, res: VercelResponse) => {
 const main = async (req: NextApiRequest, res: NextApiResponse) => {
   const query = new URL(req.url || "/", "http://bbzq.invalid").searchParams;
-  // BiliRoaming uses the main APP search for PGC/movie categories because
-  // the international search endpoint does not return the global OGV catalog
-  // for these synthetic category types.
-  const upstream = query.get("type") === "7" || query.get("type") === "8"
-    ? `${mainApi}/x/v2/search/type${new URL(req.url || "/", "http://bbzq.invalid").search}`
-    : intlApi + req.url;
+  const type = query.get("type");
+
+  // Route search requests based on type and server region:
+  // - type=7 (HK/TW bangumi): Always use main API (HK/TW content is on main site)
+  // - type=8 (intl movie): Always use main API (intl API returns empty results)
+  // - other types: Use intl API
+  const shouldUseMainApi = type === "7" || type === "8";
+
+  // Remove custom type parameter (7/8) before forwarding to Bilibili API
+  // These are BBZQ-specific types that Bilibili API doesn't recognize
+  // Convert them to Bilibili's standard search types:
+  // - BBZQ type=7/8 -> Bilibili type=1 (bangumi/PGC)
+  const cleanUrl = new URL(req.url || "/", "http://bbzq.invalid");
+  if (type === "7" || type === "8") {
+    cleanUrl.searchParams.set("type", "1");  // Use Bilibili's bangumi/PGC search type
+    // Add area parameter for main API search
+    // Main API supports area=hk/tw but not area=intl, so use "hk" as default for intl region
+    if (shouldUseMainApi) {
+      const area = env.bbzq_region === "intl" ? "hk" : (env.bbzq_region || "hk");
+      cleanUrl.searchParams.set("area", area);
+      // Add build parameter if not present (required by main API)
+      if (!cleanUrl.searchParams.has("build")) {
+        cleanUrl.searchParams.set("build", "6400000");
+      }
+    }
+  }
+
+  const cleanSearch = cleanUrl.search;
+  const cleanPath = cleanUrl.pathname;
+
+  const upstream = shouldUseMainApi
+    ? `${mainApi}/x/v2/search/type${cleanSearch}`
+    : `${intlApi}${cleanPath}${cleanSearch}`;
   return resinFetch(upstream, {
     method: req.method,
     headers: {
