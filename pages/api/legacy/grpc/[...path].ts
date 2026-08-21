@@ -89,17 +89,9 @@ export default async function handler(
   try {
     if (routeKey === "dm") {
       const upstreamHeaders = requestHeaders(req);
-      // DmView subtitle metadata is region-dependent but public. Forwarding
-      // the mainland account identity makes Bilibili omit regional tracks.
-      for (const name of [
-        "authorization",
-        "access_key",
-        "x-access-key",
-        "x-bili-metadata-bin",
-        "cookie",
-      ]) {
-        delete upstreamHeaders[name];
-      }
+      // Bilibili only includes the regional subtitle tracks for authenticated
+      // DmView requests. Keep the app identity and gRPC metadata intact; Resin
+      // proxy credentials are handled separately by resinGrpcRequest.
       const response = await resinGrpcRequest(
         target,
         req.method || "POST",
